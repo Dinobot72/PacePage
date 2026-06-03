@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   Image,
   TouchableOpacity,
   TextInput,
@@ -11,11 +10,21 @@ import {
   Platform,
   ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+
+const C = {
+  cream:  '#F5F0E8',
+  ink:    '#2C2416',
+  tan:    '#EDE5D4',
+  muted:  '#9C8F7A',
+  white:  '#FFFFFF',
+  border: '#E0D8CC',
+};
 
 async function persistPhoto(tempUri: string): Promise<string> {
   if (Platform.OS === 'web' || !FileSystem.documentDirectory) return tempUri;
@@ -43,10 +52,11 @@ export default function AddRunScreen() {
     (parseInt(seconds) || 0);
   const dist = parseFloat(distance) || 0;
   const paceSeconds = dist > 0 && totalSeconds > 0 ? totalSeconds / dist : 0;
-  const paceDisplay =
-    paceSeconds > 0
-      ? `${Math.floor(paceSeconds / 60)}:${String(Math.round(paceSeconds % 60)).padStart(2, '0')} /mi`
-      : '—';
+  const paceM = Math.floor(paceSeconds / 60);
+  const paceS = Math.round(paceSeconds % 60);
+  const paceDisplay = paceSeconds > 0
+    ? `${paceM}:${String(paceS).padStart(2, '0')}`
+    : '—';
 
   const resetForm = () => {
     setPhotoUri(null);
@@ -59,16 +69,15 @@ export default function AddRunScreen() {
 
   const takePic = async () => {
     if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
       setPhotoUri(photo.uri);
     }
   };
 
   const saveRun = async () => {
     if (!photoUri) return;
-    if (dist <= 0) { Alert.alert('Missing distance', 'Please enter a valid distance.'); return; }
-    if (totalSeconds <= 0) { Alert.alert('Missing time', 'Please enter a time.'); return; }
-
+    if (dist <= 0) { Alert.alert('Missing distance', 'Enter how far you ran.'); return; }
+    if (totalSeconds <= 0) { Alert.alert('Missing time', 'Enter your finish time.'); return; }
     try {
       const imageUri = await persistPhoto(photoUri);
       const newRun = {
@@ -85,89 +94,115 @@ export default function AddRunScreen() {
       await AsyncStorage.setItem('@runs', JSON.stringify([newRun, ...runs]));
       resetForm();
       router.push('/');
-    } catch (error) {
-      console.error('Failed to save run:', error);
-      Alert.alert('Error', 'Could not save your run. Please try again.');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not save. Please try again.');
     }
   };
 
+  // ── Permission screens ────────────────────────────────────────────────────
   if (!permission) {
-    return <View style={styles.container}><Text style={styles.text}>Loading camera…</Text></View>;
+    return <View style={s.fullDark}><Text style={s.lightText}>Loading…</Text></View>;
   }
-
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Camera access is needed to take a run photo.</Text>
-        <Button onPress={requestPermission} title="Grant Permission" color="#FF5252" />
+      <View style={s.permWrap}>
+        <Text style={s.permTitle}>Camera access needed</Text>
+        <Text style={s.permBody}>To add a run photo to your scrapbook, we need camera access.</Text>
+        <TouchableOpacity style={s.permBtn} onPress={requestPermission}>
+          <Text style={s.permBtnText}>Grant permission</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  // ── Photo review + form ───────────────────────────────────────────────────
   if (photoUri) {
     return (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={s.formRoot}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
+        <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Photo with overlay retake button */}
+          <View style={s.photoWrap}>
+            <Image source={{ uri: photoUri }} style={s.preview} resizeMode="cover" />
+            <TouchableOpacity style={s.retakeBtn} onPress={resetForm}>
+              <Text style={s.retakeBtnText}>↩ retake</Text>
+            </TouchableOpacity>
+          </View>
 
-          <View style={styles.form}>
-            {/* Live pace badge */}
-            <View style={styles.paceBadge}>
-              <Text style={styles.paceBadgeLabel}>Pace</Text>
-              <Text style={styles.paceBadgeValue}>{paceDisplay}</Text>
+          <View style={s.form}>
+            {/* Live pace display */}
+            <View style={s.paceCard}>
+              <Text style={s.paceLabel}>PACE / MILE</Text>
+              <Text style={s.paceVal}>{paceDisplay}</Text>
             </View>
 
-            <Text style={styles.label}>Distance (miles)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="3.1"
-              placeholderTextColor="#aaa"
-              value={distance}
-              onChangeText={setDistance}
-            />
-
-            <Text style={styles.label}>Time</Text>
-            <View style={styles.timeRow}>
+            {/* Distance */}
+            <Text style={s.label}>Distance</Text>
+            <View style={s.inputRow}>
               <TextInput
-                style={[styles.input, styles.timeInput]}
-                keyboardType="number-pad"
-                placeholder="0h"
-                placeholderTextColor="#aaa"
-                value={hours}
-                onChangeText={setHours}
-                maxLength={2}
+                style={[s.input, { flex: 1 }]}
+                keyboardType="decimal-pad"
+                placeholder="3.1"
+                placeholderTextColor={C.muted}
+                value={distance}
+                onChangeText={setDistance}
               />
-              <Text style={styles.timeSep}>:</Text>
-              <TextInput
-                style={[styles.input, styles.timeInput]}
-                keyboardType="number-pad"
-                placeholder="28m"
-                placeholderTextColor="#aaa"
-                value={minutes}
-                onChangeText={setMinutes}
-                maxLength={2}
-              />
-              <Text style={styles.timeSep}>:</Text>
-              <TextInput
-                style={[styles.input, styles.timeInput]}
-                keyboardType="number-pad"
-                placeholder="30s"
-                placeholderTextColor="#aaa"
-                value={seconds}
-                onChangeText={setSeconds}
-                maxLength={2}
-              />
+              <View style={s.unitBadge}><Text style={s.unitBadgeText}>mi</Text></View>
             </View>
 
-            <Text style={styles.label}>Notes (optional)</Text>
+            {/* Time */}
+            <Text style={s.label}>Finish time</Text>
+            <View style={s.timeRow}>
+              <View style={s.timeField}>
+                <TextInput
+                  style={s.timeInput}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={C.muted}
+                  value={hours}
+                  onChangeText={setHours}
+                  maxLength={2}
+                />
+                <Text style={s.timeUnit}>h</Text>
+              </View>
+              <Text style={s.timeSep}>:</Text>
+              <View style={s.timeField}>
+                <TextInput
+                  style={s.timeInput}
+                  keyboardType="number-pad"
+                  placeholder="28"
+                  placeholderTextColor={C.muted}
+                  value={minutes}
+                  onChangeText={setMinutes}
+                  maxLength={2}
+                />
+                <Text style={s.timeUnit}>m</Text>
+              </View>
+              <Text style={s.timeSep}>:</Text>
+              <View style={s.timeField}>
+                <TextInput
+                  style={s.timeInput}
+                  keyboardType="number-pad"
+                  placeholder="30"
+                  placeholderTextColor={C.muted}
+                  value={seconds}
+                  onChangeText={setSeconds}
+                  maxLength={2}
+                />
+                <Text style={s.timeUnit}>s</Text>
+              </View>
+            </View>
+
+            {/* Notes */}
+            <Text style={s.label}>How did it feel?</Text>
             <TextInput
-              style={[styles.input, styles.notesInput]}
-              placeholder="Morning run, felt great…"
-              placeholderTextColor="#aaa"
+              style={s.notesInput}
+              placeholder="Legs felt strong, new route through the park…"
+              placeholderTextColor={C.muted}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -175,80 +210,150 @@ export default function AddRunScreen() {
               textAlignVertical="top"
             />
 
-            <View style={styles.buttonRow}>
-              <View style={styles.buttonWrap}>
-                <Button title="Retake" onPress={resetForm} color="#888" />
-              </View>
-              <View style={styles.buttonWrap}>
-                <Button title="Save Run" onPress={saveRun} color="#FF5252" />
-              </View>
-            </View>
+            {/* Save */}
+            <TouchableOpacity style={s.saveBtn} onPress={saveRun} activeOpacity={0.85}>
+              <Text style={s.saveBtnText}>Save to scrapbook</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     );
   }
 
+  // ── Camera viewfinder ─────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
-      <CameraView style={styles.camera} facing="back" ref={cameraRef} />
-      <View style={styles.overlay}>
-        <TouchableOpacity style={styles.captureButton} onPress={takePic} activeOpacity={0.7}>
-          <View style={styles.captureInner} />
+    <View style={s.fullDark}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <CameraView style={s.camera} facing="back" ref={cameraRef} />
+
+      {/* Top label */}
+      <View style={s.camTopBar}>
+        <Text style={s.camHint}>Frame your post-run moment</Text>
+      </View>
+
+      {/* Shutter */}
+      <View style={s.shutterBar}>
+        <TouchableOpacity style={s.shutter} onPress={takePic} activeOpacity={0.8}>
+          <View style={s.shutterRing}>
+            <View style={s.shutterDot} />
+          </View>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  scrollContent: { flexGrow: 1 },
-  text: { textAlign: 'center', color: '#fff', marginBottom: 20, paddingHorizontal: 20 },
+const s = StyleSheet.create({
+  fullDark: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  lightText: { color: '#fff', fontSize: 15 },
 
+  // Permission
+  permWrap: {
+    flex: 1, backgroundColor: C.cream,
+    justifyContent: 'center', alignItems: 'center', padding: 40,
+  },
+  permTitle: { fontSize: 22, fontWeight: '800', color: C.ink, marginBottom: 10 },
+  permBody: { fontSize: 15, color: C.muted, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+  permBtn: {
+    backgroundColor: C.ink, borderRadius: 14,
+    paddingHorizontal: 28, paddingVertical: 14,
+  },
+  permBtnText: { color: C.cream, fontSize: 15, fontWeight: '600' },
+
+  // Camera
   camera: { flex: 1 },
-  overlay: {
+  camTopBar: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    paddingTop: 56, paddingBottom: 20, alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  camHint: { color: 'rgba(255,255,255,0.8)', fontSize: 14, letterSpacing: 0.5 },
+  shutterBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingBottom: 48, alignItems: 'center',
+    paddingBottom: 52, alignItems: 'center',
   },
-  captureButton: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  shutter: {
+    width: 84, height: 84, borderRadius: 42,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center', alignItems: 'center',
+  },
+  shutterRing: {
+    width: 72, height: 72, borderRadius: 36,
     borderWidth: 3, borderColor: '#fff',
+    justifyContent: 'center', alignItems: 'center',
   },
-  captureInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: '#fff' },
+  shutterDot: {
+    width: 56, height: 56, borderRadius: 28, backgroundColor: '#fff',
+  },
 
+  // Form
+  formRoot: { flex: 1, backgroundColor: C.cream },
+  scrollContent: { flexGrow: 1 },
+  photoWrap: { position: 'relative' },
   preview: { width: '100%', height: 300 },
+  retakeBtn: {
+    position: 'absolute', bottom: 14, left: 14,
+    backgroundColor: 'rgba(44,36,22,0.65)',
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  retakeBtnText: { color: C.cream, fontSize: 12, fontWeight: '500' },
+
   form: {
-    padding: 20, backgroundColor: '#fff',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    marginTop: -20, flex: 1,
+    backgroundColor: C.cream,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    marginTop: -24, padding: 22, paddingBottom: 40,
   },
 
-  paceBadge: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF0F0', borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 12,
-    marginBottom: 16,
+  paceCard: {
+    backgroundColor: C.ink, borderRadius: 16,
+    paddingVertical: 16, alignItems: 'center',
+    marginBottom: 22,
   },
-  paceBadgeLabel: { fontSize: 14, color: '#888' },
-  paceBadgeValue: { fontSize: 22, fontWeight: '700', color: '#FF5252' },
+  paceLabel: { fontSize: 10, letterSpacing: 2, color: C.muted, fontWeight: '500', marginBottom: 4 },
+  paceVal: { fontSize: 36, fontWeight: '800', color: C.cream, letterSpacing: -1 },
 
-  label: { fontSize: 14, fontWeight: '600', marginTop: 14, marginBottom: 6, color: '#333' },
+  label: {
+    fontSize: 11, letterSpacing: 1.5, color: C.muted,
+    fontWeight: '500', marginBottom: 8, marginTop: 16,
+  },
+
+  inputRow: { flexDirection: 'row', alignItems: 'center' },
   input: {
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 8,
-    padding: 12, fontSize: 16, backgroundColor: '#fafafa', color: '#000',
+    backgroundColor: C.white, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 16, color: C.ink,
+  },
+  unitBadge: {
+    marginLeft: 8, backgroundColor: C.tan,
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13,
+  },
+  unitBadgeText: { fontSize: 14, fontWeight: '600', color: C.ink },
+
+  timeRow: { flexDirection: 'row', alignItems: 'center' },
+  timeField: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.white, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 10, paddingVertical: 12,
+    marginRight: 4,
+  },
+  timeInput: { flex: 1, fontSize: 18, fontWeight: '700', color: C.ink, textAlign: 'center' },
+  timeUnit: { fontSize: 12, color: C.muted, fontWeight: '500' },
+  timeSep: { fontSize: 20, color: C.muted, marginRight: 4 },
+
+  notesInput: {
+    backgroundColor: C.white, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    padding: 14, fontSize: 15, color: C.ink,
+    minHeight: 88, textAlignVertical: 'top',
+    lineHeight: 22,
   },
 
-  // No gap — use marginRight on siblings instead
-  timeRow: { flexDirection: 'row', alignItems: 'center' },
-  timeInput: { flex: 1, textAlign: 'center', marginRight: 4 },
-  timeSep: { fontSize: 20, color: '#bbb', marginRight: 4 },
-
-  notesInput: { minHeight: 80 },
-
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 28 },
-  buttonWrap: { flex: 1, marginHorizontal: 6 },
+  saveBtn: {
+    marginTop: 28, backgroundColor: C.ink,
+    borderRadius: 16, paddingVertical: 17,
+    alignItems: 'center',
+  },
+  saveBtnText: { color: C.cream, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
 });
