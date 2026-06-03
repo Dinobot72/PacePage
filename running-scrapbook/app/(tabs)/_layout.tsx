@@ -3,43 +3,27 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#F5F0E8',
-          borderTopColor: '#E0D8CC',
-          borderTopWidth: 1,
-          height: 62,
-          paddingBottom: 10,
-          paddingTop: 6,
-          elevation: 0,
-        },
-        tabBarActiveTintColor: '#2C2416',
-        tabBarInactiveTintColor: '#9C8F7A',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.5,
-        },
-      }}
-    >
+    <Tabs 
+      screenOptions={{ 
+        tabBarActiveTintColor: '#FF9A00', // Bright Sunrise Orange
+        tabBarInactiveTintColor: '#FFD180', // Soft Peach
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopWidth: 0, elevation: 10 },
+        headerStyle: { backgroundColor: '#FF9A00' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+      }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Scrapbook',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
+          title: 'My Scrapbook ☀️',
+          tabBarIcon: ({ color }) => <Ionicons name="images" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="add-run"
         options={{
-          title: 'Add Run',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-outline" size={size} color={color} />
-          ),
+          title: 'Log a Run 🏃‍♀️',
+          tabBarIcon: ({ color }) => <Ionicons name="footsteps" size={26} color={color} />,
         }}
       />
     </Tabs>
