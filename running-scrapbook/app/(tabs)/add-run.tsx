@@ -337,7 +337,7 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.ink,
   },
 
-  camera: { ...StyleSheet.absoluteFillObject },
+  camera: { ...StyleSheet.absoluteFill },
 
   camTopBar: {
     position: 'absolute', top: 0, left: 0, right: 0,

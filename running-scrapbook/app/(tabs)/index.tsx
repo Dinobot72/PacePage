@@ -147,7 +147,7 @@ export default function ScrapbookScreen() {
   };
 
   const openDetail = (run: Run) => {
-    router.push({ pathname: '/run-detail', params: { id: run.id } });
+    router.push({ pathname: '/run-detail' as any, params: { id: run.id } });
   };
 
   const totalMiles = runs.reduce((s, r) => s + (r.distance || 0), 0);

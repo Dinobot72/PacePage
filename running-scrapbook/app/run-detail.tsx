@@ -209,9 +209,9 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.cream },
 
   heroWrap: { position: 'relative', height: W * 1.1 },
-  hero: { ...StyleSheet.absoluteFillObject },
+  hero: { ...StyleSheet.absoluteFill },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
 
