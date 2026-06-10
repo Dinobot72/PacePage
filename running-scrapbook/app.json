@@ -1,29 +1,30 @@
 {
   "expo": {
-    "name": "running-scrapbook",
+    "name": "Stride",
     "slug": "running-scrapbook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F0E8"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F5F0E8"
       },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.dinobot72.runningscrapbook"
@@ -38,7 +39,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Running Scrapbook to access your camera to photograph your runs."
+          "cameraPermission": "Allow Stride to access your camera to photograph your runs."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Stride to access your photos to add run pictures from your library."
         }
       ]
     ],
