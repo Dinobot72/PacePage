@@ -34,9 +34,11 @@ const C = {
 };
 
 async function persistPhoto(tempUri: string): Promise<string> {
-  if (Platform.OS === 'web' || !FileSystem.documentDirectory) return tempUri;
+  if (Platform.OS === 'web') return tempUri;
+  const documentDirectory = (FileSystem as unknown as { documentDirectory?: string }).documentDirectory;
+  if (!documentDirectory) return tempUri;
   const filename = tempUri.split('/').pop() ?? `run_${Date.now()}.jpg`;
-  const dest = `${FileSystem.documentDirectory}${filename}`;
+  const dest = `${documentDirectory}${filename}`;
   await FileSystem.copyAsync({ from: tempUri, to: dest });
   return dest;
 }
